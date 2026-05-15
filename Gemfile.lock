@@ -2,6 +2,7 @@ GEM
   remote: https://rubygems.org/
   specs:
     base64 (0.3.0)
+    csv (3.3.5)
     mustermann (3.0.4)
       ruby2_keywords (~> 0.0.1)
     rack (2.2.23)
@@ -22,6 +23,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  csv
   sinatra
   webrick
 
