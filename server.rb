@@ -1,8 +1,9 @@
 require 'sinatra'
 require 'csv'
 
+# --- CLOUD ENGINE SETTINGS ---
 set :bind, '0.0.0.0'
-set :port, ENV['PORT'] || 4568
+set :port, (ENV['PORT'] || 4568).to_i
 
 # --- ROUTES (The Hallways) ---
 get '/' do erb :lobby end
@@ -25,7 +26,6 @@ get '/office' do
     @reports = CSV.read(file_path, headers: true)
     @total_reps = @reports.length
     
-    # Calculate stats for the dashboard
     @reports.each do |row|
       room = row["Room"].to_s
       @lb_reps += 1 if room.include?("Linebacker")
@@ -34,7 +34,6 @@ get '/office' do
       @safety_reps += 1 if room.include?("Safety")
     end
   end
-  
   erb :office
 end
 
@@ -116,7 +115,6 @@ post '/submit' do
     end
   end
 
-  # Save to the CSV Spreadsheet
   file_path = "scouting_report.csv"
   headers = ["Timestamp", "Room", "Position", "Offensive Formation", "Pre-Snap Gap", "Primary Key", "Secondary Key", "Execution Rule"]
   
@@ -138,10 +136,8 @@ __END__
 <body style="font-family: -apple-system, sans-serif; background: #0f172a; color: #f8fafc; text-align: center; padding: 50px;">
   <h1 style="color: #ef4444;">🏈 Defensive Team Facility</h1>
   <p style="font-size: 18px; color: #94a3b8;">Which position room are you entering?</p>
-  
   <div style="max-width: 400px; margin: 0 auto;">
     <a href="/office" style="display: block; padding: 15px; margin: 15px 0 30px 0; background: #3b82f6; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; border: 2px solid #60a5fa;">📋 Enter Coaches Office (Film Reports)</a>
-    
     <a href="/lb" style="display: block; padding: 15px; margin: 15px 0; background: #1e293b; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; border-left: 4px solid #ef4444;">🛡️ Kuechly Linebacker Room</a>
     <a href="/dl" style="display: block; padding: 15px; margin: 15px 0; background: #1e293b; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; border-left: 4px solid #38bdf8;">⚓ Donald D-Line Room</a>
     <a href="/cb" style="display: block; padding: 15px; margin: 15px 0; background: #1e293b; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; border-left: 4px solid #facc15;">🔒 Deion CB Room</a>
@@ -153,12 +149,10 @@ __END__
 <!DOCTYPE html>
 <body style="font-family: -apple-system, sans-serif; background: #0f172a; color: #f8fafc; padding: 20px;">
   <div style="max-width: 1000px; margin: 0 auto;">
-    
     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #3b82f6; padding-bottom: 10px; margin-bottom: 20px;">
       <h1 style="color: #3b82f6; margin: 0;">📋 Head Coach Dashboard</h1>
       <a href="/" style="padding: 10px 20px; background: #334155; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">&larr; Facility Lobby</a>
     </div>
-
     <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
       <div style="background: #1e293b; padding: 15px; border-radius: 8px; flex: 1; text-align: center; border-top: 4px solid #3b82f6;">
         <h3 style="margin: 0; color: #94a3b8;">Total Reps</h3>
@@ -181,7 +175,6 @@ __END__
         <p style="font-size: 24px; font-weight: bold; margin: 10px 0 0 0;"><%= @safety_reps %></p>
       </div>
     </div>
-    
     <% if @reports.empty? %>
       <div style="background: #1e293b; padding: 30px; text-align: center; border-radius: 8px; margin-top: 20px;">
         <h2 style="color: #94a3b8;">No film studied yet.</h2>
@@ -234,25 +227,15 @@ __END__
   <h1 style="color: #ef4444;">🛡️ Kuechly Linebacker Room</h1>
   <form action="/submit" method="post" style="background: #1e293b; padding: 20px; border-radius: 8px;">
     <input type="hidden" name="room" value="Kuechly Linebacker Room">
-    <label><strong>Timestamp:</strong></label><br><input type="text" name="timestamp" placeholder="e.g., 1:04" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px; box-sizing: border-box;"><br>
-    
+    <label><strong>Timestamp:</strong></label><br><input type="text" name="timestamp" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px;"><br>
     <label><strong>Offensive Formation:</strong></label><br>
-    <input list="offense_list" name="offense" placeholder="Select or type a formation..." style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px; box-sizing: border-box;">
-    <datalist id="offense_list">
-      <option value="2x2 Spread">
-      <option value="3x1 Trips">
-      <option value="Empty (5-Wide)">
-      <option value="Pro I-Formation">
-      <option value="Singleback (12 Personnel)">
-      <option value="Heavy (22 Personnel)">
-      <option value="Wing-T">
-    </datalist><br>
-
-    <label><strong>Position:</strong></label><br><select name="position" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px; box-sizing: border-box;"><option>Mike</option><option>Will</option></select><br>
-    <label><strong>Pre-Snap Gap:</strong></label><br><select name="gap" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px; box-sizing: border-box;"><option>Strong A-Gap</option><option>Weak A-Gap</option><option>Strong B-Gap</option><option>Weak B-Gap</option><option>C-Gap</option></select><br>
-    <label><strong>1. Guard Key:</strong></label><br><select name="guard_key" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px; box-sizing: border-box;"><option>Base (Fired out)</option><option>Pulled (Across center)</option><option>Pass Set (High Hat)</option></select><br>
-    <label><strong>2. Backfield Flow:</strong></label><br><select name="back_flow" style="width: 100%; padding: 8px; margin: 5px 0 20px 0; border-radius: 4px; box-sizing: border-box;"><option>Fast Flow</option><option>Split Flow</option><option>Pass Pro</option></select><br>
-    <input type="submit" value="Get Execution Rule" style="width: 100%; padding: 12px; background: #ef4444; color: white; font-weight: bold; border: none; border-radius: 4px; cursor: pointer;">
+    <input list="offense_list" name="offense" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px;">
+    <datalist id="offense_list"><option value="2x2 Spread"><option value="3x1 Trips"><option value="Pro I-Formation"></datalist><br>
+    <label><strong>Position:</strong></label><br><select name="position" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px;"><option>Mike</option><option>Will</option></select><br>
+    <label><strong>Pre-Snap Gap:</strong></label><br><select name="gap" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px;"><option>Strong A-Gap</option><option>Weak A-Gap</option><option>Strong B-Gap</option><option>Weak B-Gap</option><option>C-Gap</option></select><br>
+    <label><strong>1. Guard Key:</strong></label><br><select name="guard_key" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px;"><option>Base (Fired out)</option><option>Pulled (Across center)</option><option>Pass Set (High Hat)</option></select><br>
+    <label><strong>2. Backfield Flow:</strong></label><br><select name="back_flow" style="width: 100%; padding: 8px; margin: 5px 0 20px 0; border-radius: 4px;"><option>Fast Flow</option><option>Split Flow</option><option>Pass Pro</option></select><br>
+    <input type="submit" value="Get Execution Rule" style="width: 100%; padding: 12px; background: #ef4444; color: white; font-weight: bold; border: none; border-radius: 4px;">
   </form>
 </body>
 
@@ -262,25 +245,15 @@ __END__
   <h1 style="color: #38bdf8;">⚓ Donald D-Line Room</h1>
   <form action="/submit" method="post" style="background: #1e293b; padding: 20px; border-radius: 8px;">
     <input type="hidden" name="room" value="Donald D-Line Room">
-    <label><strong>Timestamp:</strong></label><br><input type="text" name="timestamp" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px; box-sizing: border-box;"><br>
-    
+    <label><strong>Timestamp:</strong></label><br><input type="text" name="timestamp" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px;"><br>
     <label><strong>Offensive Formation:</strong></label><br>
-    <input list="offense_list" name="offense" placeholder="Select or type a formation..." style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px; box-sizing: border-box;">
-    <datalist id="offense_list">
-      <option value="2x2 Spread">
-      <option value="3x1 Trips">
-      <option value="Empty (5-Wide)">
-      <option value="Pro I-Formation">
-      <option value="Singleback (12 Personnel)">
-      <option value="Heavy (22 Personnel)">
-      <option value="Wing-T">
-    </datalist><br>
-
-    <label><strong>Position:</strong></label><br><select name="position" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px; box-sizing: border-box;"><option>Defensive Tackle (1/3-Tech)</option><option>Defensive End (Edge)</option></select><br>
-    <label><strong>Pre-Snap Gap:</strong></label><br><select name="gap" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px; box-sizing: border-box;"><option>A-Gap</option><option>B-Gap</option><option>C-Gap</option><option>D-Gap (Edge)</option></select><br>
-    <label><strong>1. Primary Key:</strong></label><br><select name="key1" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px; box-sizing: border-box;"><option>Base Block</option><option>Down Block</option><option>Double Team</option><option>Pass Set</option></select><br>
-    <label><strong>2. Secondary Key:</strong></label><br><select name="key2" style="width: 100%; padding: 8px; margin: 5px 0 20px 0; border-radius: 4px; box-sizing: border-box;"><option>Flow Towards / Reach</option><option>Flow Away / Pulled</option><option>Pass Protection</option></select><br>
-    <input type="submit" value="Get Trench Rule" style="width: 100%; padding: 12px; background: #38bdf8; color: white; font-weight: bold; border: none; border-radius: 4px; cursor: pointer;">
+    <input list="offense_list" name="offense" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px;">
+    <datalist id="offense_list"><option value="2x2 Spread"><option value="3x1 Trips"><option value="Pro I-Formation"></datalist><br>
+    <label><strong>Position:</strong></label><br><select name="position" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px;"><option>Defensive Tackle (1/3-Tech)</option><option>Defensive End (Edge)</option></select><br>
+    <label><strong>Pre-Snap Gap:</strong></label><br><select name="gap" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px;"><option>A-Gap</option><option>B-Gap</option><option>C-Gap</option><option>D-Gap (Edge)</option></select><br>
+    <label><strong>1. Primary Key:</strong></label><br><select name="key1" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px;"><option>Base Block</option><option>Down Block</option><option>Double Team</option><option>Pass Set</option></select><br>
+    <label><strong>2. Secondary Key:</strong></label><br><select name="key2" style="width: 100%; padding: 8px; margin: 5px 0 20px 0; border-radius: 4px;"><option>Flow Towards / Reach</option><option>Flow Away / Pulled</option><option>Pass Protection</option></select><br>
+    <input type="submit" value="Get Trench Rule" style="width: 100%; padding: 12px; background: #38bdf8; color: white; font-weight: bold; border: none; border-radius: 4px;">
   </form>
 </body>
 
@@ -290,25 +263,15 @@ __END__
   <h1 style="color: #facc15;">🔒 Deion CB Room</h1>
   <form action="/submit" method="post" style="background: #1e293b; padding: 20px; border-radius: 8px;">
     <input type="hidden" name="room" value="Deion CB Room">
-    <label><strong>Timestamp:</strong></label><br><input type="text" name="timestamp" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px; box-sizing: border-box;"><br>
-    
+    <label><strong>Timestamp:</strong></label><br><input type="text" name="timestamp" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px;"><br>
     <label><strong>Offensive Formation:</strong></label><br>
-    <input list="offense_list" name="offense" placeholder="Select or type a formation..." style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px; box-sizing: border-box;">
-    <datalist id="offense_list">
-      <option value="2x2 Spread">
-      <option value="3x1 Trips">
-      <option value="Empty (5-Wide)">
-      <option value="Pro I-Formation">
-      <option value="Singleback (12 Personnel)">
-      <option value="Heavy (22 Personnel)">
-      <option value="Wing-T">
-    </datalist><br>
-
-    <label><strong>Position:</strong></label><br><select name="position" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px; box-sizing: border-box;"><option>Field CB</option><option>Boundary CB</option><option>Nickel</option></select><br>
-    <label><strong>Coverage Zone:</strong></label><br><select name="gap" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px; box-sizing: border-box;"><option>Deep Third</option><option>Flat</option><option>Man-to-Man</option></select><br>
-    <label><strong>1. WR Release:</strong></label><br><select name="release" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px; box-sizing: border-box;"><option>Inside Release</option><option>Outside Release</option><option>Vertical Release</option></select><br>
-    <label><strong>2. QB Drop:</strong></label><br><select name="qb_drop" style="width: 100%; padding: 8px; margin: 5px 0 20px 0; border-radius: 4px; box-sizing: border-box;"><option>3-step drop</option><option>5-step drop</option><option>Play Action</option></select><br>
-    <input type="submit" value="Get Coverage Rule" style="width: 100%; padding: 12px; background: #facc15; color: #0f172a; font-weight: bold; border: none; border-radius: 4px; cursor: pointer;">
+    <input list="offense_list" name="offense" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px;">
+    <datalist id="offense_list"><option value="2x2 Spread"><option value="3x1 Trips"><option value="Pro I-Formation"></datalist><br>
+    <label><strong>Position:</strong></label><br><select name="position" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px;"><option>Field CB</option><option>Boundary CB</option><option>Nickel</option></select><br>
+    <label><strong>Coverage Zone:</strong></label><br><select name="gap" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px;"><option>Deep Third</option><option>Flat</option><option>Man-to-Man</option></select><br>
+    <label><strong>1. WR Release:</strong></label><br><select name="release" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px;"><option>Inside Release</option><option>Outside Release</option><option>Vertical Release</option></select><br>
+    <label><strong>2. QB Drop:</strong></label><br><select name="qb_drop" style="width: 100%; padding: 8px; margin: 5px 0 20px 0; border-radius: 4px;"><option>3-step drop</option><option>5-step drop</option><option>Play Action</option></select><br>
+    <input type="submit" value="Get Coverage Rule" style="width: 100%; padding: 12px; background: #facc15; color: #0f172a; font-weight: bold; border: none; border-radius: 4px;">
   </form>
 </body>
 
@@ -318,25 +281,15 @@ __END__
   <h1 style="color: #22c55e;">🦅 Reed Safety Room</h1>
   <form action="/submit" method="post" style="background: #1e293b; padding: 20px; border-radius: 8px;">
     <input type="hidden" name="room" value="Reed Safety Room">
-    <label><strong>Timestamp:</strong></label><br><input type="text" name="timestamp" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px; box-sizing: border-box;"><br>
-    
+    <label><strong>Timestamp:</strong></label><br><input type="text" name="timestamp" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px;"><br>
     <label><strong>Offensive Formation:</strong></label><br>
-    <input list="offense_list" name="offense" placeholder="Select or type a formation..." style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px; box-sizing: border-box;">
-    <datalist id="offense_list">
-      <option value="2x2 Spread">
-      <option value="3x1 Trips">
-      <option value="Empty (5-Wide)">
-      <option value="Pro I-Formation">
-      <option value="Singleback (12 Personnel)">
-      <option value="Heavy (22 Personnel)">
-      <option value="Wing-T">
-    </datalist><br>
-
-    <label><strong>Position:</strong></label><br><select name="position" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px; box-sizing: border-box;"><option>Free Safety</option><option>Strong Safety</option></select><br>
-    <label><strong>Coverage Zone/Force:</strong></label><br><select name="gap" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px; box-sizing: border-box;"><option>Deep Half</option><option>Middle of Field</option><option>Alley Defender (Force)</option></select><br>
-    <label><strong>1. O-Line Read:</strong></label><br><select name="oline" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px; box-sizing: border-box;"><option>Low Hat (Run)</option><option>High Hat (Pass)</option></select><br>
-    <label><strong>2. Route Concept:</strong></label><br><select name="routes" style="width: 100%; padding: 8px; margin: 5px 0 20px 0; border-radius: 4px; box-sizing: border-box;"><option>Vertical / Seams</option><option>Crossing / Digs</option><option>Out / Flats</option></select><br>
-    <input type="submit" value="Get Safety Rule" style="width: 100%; padding: 12px; background: #22c55e; color: white; font-weight: bold; border: none; border-radius: 4px; cursor: pointer;">
+    <input list="offense_list" name="offense" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px;">
+    <datalist id="offense_list"><option value="2x2 Spread"><option value="3x1 Trips"><option value="Pro I-Formation"></datalist><br>
+    <label><strong>Position:</strong></label><br><select name="position" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px;"><option>Free Safety</option><option>Strong Safety</option></select><br>
+    <label><strong>Coverage Zone/Force:</strong></label><br><select name="gap" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px;"><option>Deep Half</option><option>Middle of Field</option><option>Alley Defender (Force)</option></select><br>
+    <label><strong>1. O-Line Read:</strong></label><br><select name="oline" style="width: 100%; padding: 8px; margin: 5px 0 15px 0; border-radius: 4px;"><option>Low Hat (Run)</option><option>High Hat (Pass)</option></select><br>
+    <label><strong>2. Route Concept:</strong></label><br><select name="routes" style="width: 100%; padding: 8px; margin: 5px 0 20px 0; border-radius: 4px;"><option>Vertical / Seams</option><option>Crossing / Digs</option><option>Out / Flats</option></select><br>
+    <input type="submit" value="Get Safety Rule" style="width: 100%; padding: 12px; background: #22c55e; color: white; font-weight: bold; border: none; border-radius: 4px;">
   </form>
 </body>
 
