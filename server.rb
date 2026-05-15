@@ -1,9 +1,35 @@
 require 'sinatra'
-require 'csv'
+require 'pg'
 
 # --- CLOUD ENGINE SETTINGS ---
 set :bind, '0.0.0.0'
 set :port, (ENV['PORT'] || 4568).to_i
+
+# --- DATABASE SETUP ---
+def get_db
+  PG.connect(ENV['DATABASE_URL'])
+end
+
+# Boot up the database table if it doesn't exist yet
+begin
+  db = get_db
+  db.exec(%Q{
+    CREATE TABLE IF NOT EXISTS scouting_report (
+      id SERIAL PRIMARY KEY,
+      timestamp TEXT,
+      room TEXT,
+      position TEXT,
+      offense TEXT,
+      gap TEXT,
+      primary_key TEXT,
+      secondary_key TEXT,
+      rule TEXT
+    )
+  })
+  db.close
+rescue => e
+  puts "Waiting for database connection... #{e.message}"
+end
 
 # --- ROUTES (The Hallways) ---
 get '/' do erb :lobby end
@@ -14,7 +40,6 @@ get '/safety' do erb :safety_form end
 
 # --- THE COACHES OFFICE (Analytics Dashboard) ---
 get '/office' do
-  file_path = "scouting_report.csv"
   @reports = []
   @total_reps = 0
   @lb_reps = 0
@@ -22,24 +47,34 @@ get '/office' do
   @cb_reps = 0
   @safety_reps = 0
   
-  if File.exist?(file_path)
-    @reports = CSV.read(file_path, headers: true)
+  begin
+    db = get_db
+    # Pull all plays from the cloud database, newest first!
+    @reports = db.exec("SELECT * FROM scouting_report ORDER BY id DESC").to_a
     @total_reps = @reports.length
     
     @reports.each do |row|
-      room = row["Room"].to_s
+      room = row["room"].to_s
       @lb_reps += 1 if room.include?("Linebacker")
       @dl_reps += 1 if room.include?("D-Line")
       @cb_reps += 1 if room.include?("CB")
       @safety_reps += 1 if room.include?("Safety")
     end
+    db.close
+  rescue
   end
+  
   erb :office
 end
 
-# --- CLEAR FILM (Delete Database) ---
+# --- CLEAR FILM (Reset Data for a New Week) ---
 post '/clear_film' do
-  File.delete("scouting_report.csv") if File.exist?("scouting_report.csv")
+  begin
+    db = get_db
+    db.exec("TRUNCATE TABLE scouting_report")
+    db.close
+  rescue
+  end
   redirect '/office'
 end
 
@@ -115,15 +150,16 @@ post '/submit' do
     end
   end
 
-  file_path = "scouting_report.csv"
-  headers = ["Timestamp", "Room", "Position", "Offensive Formation", "Pre-Snap Gap", "Primary Key", "Secondary Key", "Execution Rule"]
-  
-  unless File.exist?(file_path)
-    CSV.open(file_path, "w") { |csv| csv << headers }
-  end
-
-  CSV.open(file_path, "a") do |csv|
-    csv << [@timestamp, @room, @position, @offense, @gap, read1, read2, @rule]
+  # Save to the Live PostgreSQL Database
+  begin
+    db = get_db
+    db.exec_params(
+      "INSERT INTO scouting_report (timestamp, room, position, offense, gap, primary_key, secondary_key, rule) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+      [@timestamp, @room, @position, @offense, @gap, read1, read2, @rule]
+    )
+    db.close
+  rescue => e
+    puts "Failed to save: #{e.message}"
   end
 
   erb :result
@@ -204,13 +240,13 @@ __END__
             <tbody>
               <% @reports.each do |row| %>
                 <tr>
-                  <td style="padding: 12px; border-bottom: 1px solid #334155;"><%= row["Timestamp"] %></td>
-                  <td style="padding: 12px; border-bottom: 1px solid #334155; font-weight: bold; color: #94a3b8;"><%= row["Room"].to_s.split(' ').first %></td>
-                  <td style="padding: 12px; border-bottom: 1px solid #334155; color: #facc15;"><%= row["Offensive Formation"] %></td>
-                  <td style="padding: 12px; border-bottom: 1px solid #334155;"><%= row["Pre-Snap Gap"] %></td>
-                  <td style="padding: 12px; border-bottom: 1px solid #334155;"><%= row["Primary Key"] %></td>
-                  <td style="padding: 12px; border-bottom: 1px solid #334155;"><%= row["Secondary Key"] %></td>
-                  <td style="padding: 12px; border-bottom: 1px solid #334155; color: #ef4444;"><%= row["Execution Rule"] %></td>
+                  <td style="padding: 12px; border-bottom: 1px solid #334155;"><%= row["timestamp"] %></td>
+                  <td style="padding: 12px; border-bottom: 1px solid #334155; font-weight: bold; color: #94a3b8;"><%= row["room"].to_s.split(' ').first %></td>
+                  <td style="padding: 12px; border-bottom: 1px solid #334155; color: #facc15;"><%= row["offense"] %></td>
+                  <td style="padding: 12px; border-bottom: 1px solid #334155;"><%= row["gap"] %></td>
+                  <td style="padding: 12px; border-bottom: 1px solid #334155;"><%= row["primary_key"] %></td>
+                  <td style="padding: 12px; border-bottom: 1px solid #334155;"><%= row["secondary_key"] %></td>
+                  <td style="padding: 12px; border-bottom: 1px solid #334155; color: #ef4444;"><%= row["rule"] %></td>
                 </tr>
               <% end %>
             </tbody>
@@ -300,7 +336,7 @@ __END__
   <div style="background: #1e293b; padding: 20px; border-radius: 8px; text-align: left; display: inline-block; width: 100%; box-sizing: border-box;">
     <p><strong>Vs:</strong> <%= @offense %> | <strong>Pre-Snap:</strong> <%= @gap %></p>
     <h2 style="color: #f1f5f9; border-top: 1px solid #334155; padding-top: 15px; margin-top: 15px; line-height: 1.4;">RULE: <span style="color: #ef4444;"><%= @rule %></span></h2>
-    <p style="color: #94a3b8; font-size: 14px; margin-top: 20px;">💾 <em>Play fully logged to spreadsheet.</em></p>
   </div>
   <br><br><a href="/" style="display: inline-block; padding: 10px 20px; background: #334155; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">&larr; Return to Facility Lobby</a>
 </body>
+EOF
