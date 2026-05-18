@@ -164,12 +164,15 @@ db do |c|
       assignment_id INTEGER NOT NULL REFERENCES assignments(id) ON DELETE CASCADE,
       player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
       play_num TEXT NOT NULL,
+      formation TEXT,
       read1 TEXT,
       read2 TEXT,
       rule TEXT,
       created_at TIMESTAMP DEFAULT NOW()
     );
   SQL
+  # Safe migration if reports table existed without formation column
+  c.exec("ALTER TABLE reports ADD COLUMN IF NOT EXISTS formation TEXT")
 end
 
 # ----- HELPERS -----
@@ -250,6 +253,7 @@ post '/play/submit' do
   aid     = params[:assignment_id].to_i
   pid     = params[:player_id].to_i
   play    = params[:play_num].to_s
+  formation = params[:formation].to_s
   read1   = params[:read1].to_s
   read2   = params[:read2].to_s
 
@@ -260,8 +264,8 @@ post '/play/submit' do
     asg = a[0]
     rule = compute_rule(asg["room"], asg["position"], read1, read2)
     c.exec_params(
-      "INSERT INTO reports (assignment_id, player_id, play_num, read1, read2, rule) VALUES ($1,$2,$3,$4,$5,$6)",
-      [aid, pid, play, read1, read2, rule]
+      "INSERT INTO reports (assignment_id, player_id, play_num, formation, read1, read2, rule) VALUES ($1,$2,$3,$4,$5,$6,$7)",
+      [aid, pid, play, formation, read1, read2, rule]
     )
   end
   redirect "/player/#{pid}"
@@ -333,7 +337,8 @@ end
 get '/office' do
   db do |c|
     @reports = c.exec(<<~SQL).to_a
-      SELECT r.*, p.name AS player_name, a.room, a.formation, a.gap, a.position
+      SELECT r.*, p.name AS player_name, a.room, a.gap, a.position,
+             COALESCE(NULLIF(r.formation,''), a.formation) AS display_formation
       FROM reports r
       JOIN players p ON p.id = r.player_id
       JOIN assignments a ON a.id = r.assignment_id
@@ -487,7 +492,6 @@ __END__
       </div>
 
       <div class="info-row">
-        <% if a["formation"].to_s != "" %><span class="badge">vs <%= h a["formation"] %></span><% end %>
         <% if a["gap"].to_s != "" %><span class="badge">Gap: <%= h a["gap"] %></span><% end %>
       </div>
 
@@ -525,9 +529,6 @@ __END__
     <% if @assignment["position"].to_s != "" %>
       <span class="badge" style="background:#334155; color:#cbd5e1;"><%= h @assignment["position"] %></span>
     <% end %>
-    <% if @assignment["formation"].to_s != "" %>
-      <span class="badge" style="background:#334155; color:#cbd5e1;">vs <%= h @assignment["formation"] %></span>
-    <% end %>
     <% if @assignment["gap"].to_s != "" %>
       <span class="badge" style="background:#334155; color:#cbd5e1;">Gap: <%= h @assignment["gap"] %></span>
     <% end %>
@@ -542,8 +543,20 @@ __END__
   <input type="hidden" name="player_id" value="<%= @player_id %>">
   <input type="hidden" name="play_num" value="<%= h @play_num %>">
 
+  <label>1. Offensive Formation</label>
+  <select name="formation" required>
+    <option value="">— pick one —</option>
+    <% FORMATIONS.each do |group, opts| %>
+      <optgroup label="<%= group %>">
+        <% opts.each do |o| %>
+          <option value="<%= h o %>"<%= " selected" if @assignment["formation"].to_s == o %>><%= h o %></option>
+        <% end %>
+      </optgroup>
+    <% end %>
+  </select>
+
   <% @reads.each_with_index do |r, i| %>
-    <label><%= i+1 %>. <%= r[:label] %></label>
+    <label><%= i+2 %>. <%= r[:label] %></label>
     <select name="read<%= i+1 %>" required>
       <option value="">— pick one —</option>
       <% r[:options].each do |o| %>
@@ -633,9 +646,9 @@ __END__
   <label>Play numbers <span class="muted">(comma or space separated)</span></label>
   <input type="text" name="play_numbers" placeholder="e.g. 12, 15, 23, 41" required>
 
-  <label>Offensive Formation</label>
+  <label>Suggested Formation <span class="muted">(optional — player will identify this themselves)</span></label>
   <select name="formation" id="fmt-select" onchange="document.getElementById('fmt-other').style.display = (this.value === '__other__') ? 'block' : 'none';">
-    <option value="">— pick one —</option>
+    <option value="">— leave blank (recommended) —</option>
     <% FORMATIONS.each do |group, opts| %>
       <optgroup label="<%= group %>">
         <% opts.each do |o| %>
@@ -750,7 +763,7 @@ __END__
               <td><%= h r["player_name"] %></td>
               <td><strong><%= h r["play_num"] %></strong></td>
               <td style="color:<%= room[:color] %>;"><%= room[:emoji] %></td>
-              <td style="color:#facc15;"><%= h r["formation"] %></td>
+              <td style="color:#facc15;"><%= h r["display_formation"] %></td>
               <td><%= h r["read1"] %> / <%= h r["read2"] %></td>
               <td style="color:#fca5a5;"><%= h r["rule"] %></td>
             </tr>
