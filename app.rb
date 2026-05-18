@@ -61,7 +61,7 @@ POSITIONS = {
 MOTIONS = ["No Motion", "Motion to Strong", "Motion to Weak", "Motion to Bunch", "Shift", "Jet Motion"]
 
 # 2026 schedule for the team dropdown on assignments
-SCHEDULE = [
+SCHEDULE_2026 = [
   { team: "New Town High School",                    date: "Aug 22" },
   { team: "Liberty High School",                     date: "Aug 28" },
   { team: "Landon School",                           date: "Sep 4"  },
@@ -73,6 +73,24 @@ SCHEDULE = [
   { team: "John Carroll High School",                date: "Oct 23" },
   { team: "St. Vincent Pallotti High School",        date: "Oct 30" },
   { team: "St. Paul's School",                       date: "Nov 6"  }
+]
+
+# 2025 schedule (last year — for studying film of past opponents)
+SCHEDULE_2025 = [
+  "Loyola Blakefield (8/12 Joint)",
+  "Caesar Rodney High School",
+  "Gilman School",
+  "Landon School",
+  "Severna Park High School",
+  "Long Island Lutheran High School",
+  "St. Vincent Pallotti High School (Sep 19)",
+  "Archbishop Curley High School",
+  "Severn School",
+  "Our Lady of Mount Carmel",
+  "John Carroll High School",
+  "St. John's Catholic Prep High School",
+  "St. Paul's High School",
+  "St. Vincent Pallotti High School (Nov 7)"
 ]
 
 # Per-POSITION post-snap key options
@@ -1086,9 +1104,16 @@ __END__
       <label>Team / Opponent</label>
       <select name="team" id="team-select" onchange="document.getElementById('team-other-wrap').style.display = (this.value === '__other__') ? 'block' : 'none';">
         <option value="">— pick an opponent —</option>
-        <% SCHEDULE.each do |g| %>
-          <option value="<%= h g[:team] %>"><%= h g[:team] %> (<%= h g[:date] %>)</option>
-        <% end %>
+        <optgroup label="2026 Schedule">
+          <% SCHEDULE_2026.each do |g| %>
+            <option value="<%= h g[:team] %>"><%= h g[:team] %> (<%= h g[:date] %>)</option>
+          <% end %>
+        </optgroup>
+        <optgroup label="2025 Schedule">
+          <% SCHEDULE_2025.each do |t| %>
+            <option value="<%= h t %>"><%= h t %></option>
+          <% end %>
+        </optgroup>
         <option value="__other__">Other (type your own)…</option>
       </select>
       <div id="team-other-wrap" style="display:none; margin-top:8px;">
