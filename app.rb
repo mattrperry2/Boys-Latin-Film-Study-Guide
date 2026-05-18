@@ -60,6 +60,21 @@ POSITIONS = {
 
 MOTIONS = ["No Motion", "Motion to Strong", "Motion to Weak", "Motion to Bunch", "Shift", "Jet Motion"]
 
+# 2026 schedule for the team dropdown on assignments
+SCHEDULE = [
+  { team: "New Town High School",                    date: "Aug 22" },
+  { team: "Liberty High School",                     date: "Aug 28" },
+  { team: "Landon School",                           date: "Sep 4"  },
+  { team: "Hammond",                                 date: "Sep 10" },
+  { team: "Annapolis Area Christian High School",    date: "Sep 25" },
+  { team: "Severn School",                           date: "Oct 3"  },
+  { team: "Archbishop Curley High School",           date: "Oct 9"  },
+  { team: "Our Lady of Mount Carmel",                date: "Oct 16" },
+  { team: "John Carroll High School",                date: "Oct 23" },
+  { team: "St. Vincent Pallotti High School",        date: "Oct 30" },
+  { team: "St. Paul's School",                       date: "Nov 6"  }
+]
+
 # Per-POSITION post-snap key options
 POST_SNAP_KEYS = {
   "Mike"                           => {
@@ -231,10 +246,12 @@ db do |c|
       hudl_link TEXT,
       notes TEXT,
       answer_key JSONB,
+      team TEXT,
       created_at TIMESTAMP DEFAULT NOW()
     );
   SQL
   c.exec("ALTER TABLE assignments ADD COLUMN IF NOT EXISTS answer_key JSONB")
+  c.exec("ALTER TABLE assignments ADD COLUMN IF NOT EXISTS team TEXT")
 
   c.exec(<<~SQL)
     CREATE TABLE IF NOT EXISTS reports (
@@ -475,6 +492,8 @@ post '/assign/add' do
   play_numbers = params[:play_numbers].to_s.strip
   hudl_link    = params[:hudl_link].to_s.strip
   notes        = params[:notes].to_s.strip
+  team         = params[:team].to_s
+  team         = params[:team_other].to_s.strip if team == "__other__"
 
   answer_key = {}
   parse_plays(play_numbers).each do |pn|
@@ -492,9 +511,9 @@ post '/assign/add' do
     room = pr.ntuples > 0 ? pr[0]["room"] : nil
     position = pr.ntuples > 0 ? pr[0]["position"] : nil
 
-    c.exec_params(<<~SQL, [player_id, room, position, play_numbers, hudl_link, notes, answer_key.to_json])
-      INSERT INTO assignments (player_id, room, position, play_numbers, hudl_link, notes, answer_key)
-      VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb)
+    c.exec_params(<<~SQL, [player_id, room, position, play_numbers, hudl_link, notes, answer_key.to_json, team])
+      INSERT INTO assignments (player_id, room, position, play_numbers, hudl_link, notes, answer_key, team)
+      VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8)
     SQL
   end
   redirect '/assign'
@@ -621,7 +640,7 @@ __END__
     .btn-cyan   { background:#38bdf8; }
     .btn-ghost  { background:#334155; }
     .btn-sm     { padding:10px 14px; min-height:40px; font-size:14px; width:auto; }
-    .top { display:flex; gap:10px; align-items:center; margin-bottom:14px; }
+    .top { display:flex; gap:10px; align-items:center; margin-bottom:14px; padding-right:54px; }
     .top h1 { flex:1; margin:0; }
     .sticky { position:fixed; left:0; right:0; bottom:0;
       padding:12px 16px calc(12px + env(safe-area-inset-bottom));
@@ -668,9 +687,21 @@ __END__
       .two-col { display:grid; grid-template-columns: 1fr 1.2fr; gap:20px; align-items:start; }
       .two-col > .card { margin-bottom:0; }
     }
+    /* Floating home button (top-right on every page) */
+    .home-fab { position:fixed; top:calc(env(safe-area-inset-top) + 12px); right:14px; z-index:50;
+      background:#1e293b; border:1px solid #334155; color:#f8fafc; text-decoration:none;
+      width:44px; height:44px; border-radius:22px;
+      display:flex; align-items:center; justify-content:center; font-size:20px;
+      box-shadow:0 4px 12px rgba(0,0,0,.3); }
+    .home-fab:hover { background:#334155; }
+    /* Hide on the home page itself */
+    body.is-home .home-fab { display:none; }
   </style>
 </head>
-<body><div class="wrap <%= @wide ? 'wrap-wide' : '' %>"><%= yield %></div></body>
+<body class="<%= request.path == '/' ? 'is-home' : '' %>">
+  <a href="/" class="home-fab" title="Defensive Facility home">🏠</a>
+  <div class="wrap <%= @wide ? 'wrap-wide' : '' %>"><%= yield %></div>
+</body>
 </html>
 
 @@home
@@ -729,6 +760,9 @@ __END__
           <span class="badge" style="background:<%= room[:color] %>; color:#0f172a;">
             <%= room[:emoji] %> <%= room[:name] %>
           </span>
+        <% end %>
+        <% if a["team"].to_s != "" %>
+          <span class="badge" style="background:#334155; color:#cbd5e1;">vs <%= h a["team"] %></span>
         <% end %>
         <strong style="margin-left:auto;"><%= done_n %>/<%= plays.length %></strong>
       </div>
@@ -855,6 +889,9 @@ __END__
   <p style="margin:0;"><strong><%= h @assignment["player_name"] %></strong></p>
   <% if @room[:name] %>
     <p class="muted" style="margin:4px 0 0;"><%= @room[:emoji] %> <%= @room[:name] %> — <%= h @assignment["position"] %></p>
+  <% end %>
+  <% if @assignment["team"].to_s != "" %>
+    <p class="muted" style="margin:4px 0 0;">vs <%= h @assignment["team"] %></p>
   <% end %>
 </div>
 
@@ -1046,6 +1083,18 @@ __END__
         <% end %>
       </select>
 
+      <label>Team / Opponent</label>
+      <select name="team" id="team-select" onchange="document.getElementById('team-other-wrap').style.display = (this.value === '__other__') ? 'block' : 'none';">
+        <option value="">— pick an opponent —</option>
+        <% SCHEDULE.each do |g| %>
+          <option value="<%= h g[:team] %>"><%= h g[:team] %> (<%= h g[:date] %>)</option>
+        <% end %>
+        <option value="__other__">Other (type your own)…</option>
+      </select>
+      <div id="team-other-wrap" style="display:none; margin-top:8px;">
+        <input type="text" name="team_other" placeholder="Team name">
+      </div>
+
       <label>Play numbers <span class="muted">(comma or space separated)</span></label>
       <input type="text" name="play_numbers" id="play-numbers" placeholder="e.g. 12, 15, 23, 41" required>
 
@@ -1114,6 +1163,9 @@ __END__
           <button type="submit" class="btn btn-ghost btn-sm">🗑️</button>
         </form>
       </div>
+      <% if a["team"].to_s != "" %>
+        <p style="margin:6px 0;"><strong>Vs:</strong> <%= h a["team"] %></p>
+      <% end %>
       <p style="margin:6px 0;"><strong>Plays:</strong> <%= h a["play_numbers"] %></p>
       <% if a["notes"].to_s != "" %>
         <p class="muted" style="margin:4px 0;"><%= h a["notes"] %></p>
