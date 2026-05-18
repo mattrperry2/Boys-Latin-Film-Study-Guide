@@ -53,81 +53,157 @@ GAPS = {
 
 POSITIONS = {
   "lb"     => ["Mike", "Will", "Sam"],
-  "dl"     => ["DT (1/3-Tech)", "DE (Edge)", "NT"],
+  "dl"     => ["Defensive Tackle (1/3-Tech)", "Nose Tackle", "Defensive End (Edge)"],
   "cb"     => ["Field CB", "Boundary CB", "Nickel"],
   "safety" => ["Free Safety", "Strong Safety"]
 }
 
-READS = {
-  "lb" => [
-    { name: "read1", label: "Guard Key",
-      options: ["Base (Fired out)", "Pulled (Across center)", "Pass Set (High Hat)"] },
-    { name: "read2", label: "Backfield Flow",
-      options: ["Fast Flow", "Split Flow", "Pass Pro"] }
-  ],
-  "dl" => [
-    { name: "read1", label: "Primary Key",
-      options: ["Base Block", "Down Block", "Double Team", "Pass Set"] },
-    { name: "read2", label: "Secondary Key",
-      options: ["Flow Towards / Reach", "Flow Away / Pulled", "Pass Protection"] }
-  ],
-  "cb" => [
-    { name: "read1", label: "WR Release",
-      options: ["Inside Release", "Outside Release", "Vertical Release"] },
-    { name: "read2", label: "QB Drop",
-      options: ["3-step", "5-step", "Play Action"] }
-  ],
-  "safety" => [
-    { name: "read1", label: "O-Line Read",
-      options: ["Low Hat (Run)", "High Hat (Pass)"] },
-    { name: "read2", label: "Route Concept",
-      options: ["Vertical / Seams", "Crossing / Digs", "Out / Flats"] }
-  ]
+MOTIONS = ["No Motion", "Motion to Strong", "Motion to Weak", "Motion to Bunch", "Shift", "Jet Motion"]
+
+# Per-POSITION post-snap key options
+POST_SNAP_KEYS = {
+  "Mike"                           => {
+    label: "Guards-to-Ball Read",
+    options: [
+      "Both guards fire out (downhill run)",
+      "Guards pull same direction (flow)",
+      "Guards pull opposite (counter/trap)",
+      "Guards pass set",
+      "Center reach (outside zone)"
+    ]
+  },
+  "Will"                           => {
+    label: "Near Tackle / TE Read",
+    options: [
+      "Down block by TE/tackle",
+      "Reach block",
+      "TE release / tackle pass set",
+      "Pulling lineman coming at me",
+      "Base run block"
+    ]
+  },
+  "Sam"                            => {
+    label: "Near Tackle / TE Read",
+    options: [
+      "Down block by TE/tackle",
+      "Reach block",
+      "TE release / tackle pass set",
+      "Pulling lineman coming at me",
+      "Base run block"
+    ]
+  },
+  "Defensive Tackle (1/3-Tech)"    => {
+    label: "Near Guard Read",
+    options: [
+      "High hat (pass set)",
+      "Low hat (run block)",
+      "Reach block (trying to hook me)",
+      "Down block (guard blocks inside)",
+      "Pull (guard leaves)"
+    ]
+  },
+  "Nose Tackle"                    => {
+    label: "Center Read",
+    options: [
+      "High hat (pass set)",
+      "Low hat (run block)",
+      "Reach block",
+      "Down block",
+      "Combo/Double team"
+    ]
+  },
+  "Defensive End (Edge)"           => {
+    label: "Tackle / TE Read",
+    options: [
+      "High hat (pass set)",
+      "Low hat / down block",
+      "Reach block",
+      "TE arc release (possible boot)",
+      "Kick-out block coming"
+    ]
+  },
+  "Field CB"                       => {
+    label: "WR Release / QB",
+    options: [
+      "Inside release",
+      "Outside release",
+      "Vertical release",
+      "WR blocks down / cracks (run)",
+      "QB drops back (zone)",
+      "QB hands off (run support)"
+    ]
+  },
+  "Boundary CB"                    => {
+    label: "WR Release / QB",
+    options: [
+      "Inside release",
+      "Outside release",
+      "Vertical release",
+      "WR blocks down / cracks (run)",
+      "QB drops back (zone)",
+      "QB hands off (run support)"
+    ]
+  },
+  "Nickel"                         => {
+    label: "Slot WR / OL Read",
+    options: [
+      "Inside release",
+      "Outside release",
+      "Slot blocks down (crack)",
+      "Bubble screen / now route",
+      "QB pass set (drop to zone)",
+      "Run flow toward me"
+    ]
+  },
+  "Free Safety"                    => {
+    label: "QB / #2 / OL Read",
+    options: [
+      "QB drops back (read routes)",
+      "Play-action (read it, stay deep)",
+      "Run flow confirmed (trigger)",
+      "Double move / post threat",
+      "#2 vertical"
+    ]
+  },
+  "Strong Safety"                  => {
+    label: "TE / #2 Strong Read",
+    options: [
+      "Run flow strong (fill alley)",
+      "TE vertical (carry)",
+      "TE drag / flat (pass off)",
+      "Play-action",
+      "Crosser from backside"
+    ]
+  }
 }
 
-def compute_rule(room_key, position, read1, read2)
-  case room_key
-  when "lb"
-    if read1.include?("Pulled") && read2.include?("Split")
-      "COUNTER/TRAP — scrape over the top and spill!"
-    elsif read1.include?("Pass") || read2.include?("Pass")
-      "High hat — drop to hook/curl zone. Eyes on QB."
-    elsif read1.include?("Base") && read2.include?("Fast")
-      "Downhill — fill your gap NOW!"
-    else
-      "Read flow, fit your gap, play fast!"
-    end
-  when "dl"
-    if position.to_s.include?("DE") || position.to_s.include?("Edge")
-      if read1.include?("Down")     then "Tackle blocked down — crash, spill the kickout!"
-      elsif read1.include?("Pass")  then "High Hat — speed rush, contain the QB!"
-      else                                "Set the edge, keep outside arm free!"
-      end
-    else
-      if read1.include?("Down") && read2.include?("Away") then "BACK BLOCK — anchor, squeeze the puller!"
-      elsif read1.include?("Double")                       then "DOUBLE TEAM — drop hips, fight pressure!"
-      elsif read1.include?("Pass")                         then "HIGH HAT — convert to pass rush!"
-      else                                                       "Strike breastplate, control your gap!"
-      end
-    end
-  when "cb"
-    if read1.include?("Inside") && read2.include?("3-step")
-      "SLANT — plant and drive on the inside hip!"
-    elsif read1.include?("Vertical") && read2.include?("5-step")
-      "DEEP THREAT — stay in phase, play the pocket!"
-    elsif read2.include?("Play Action")
-      "RUN READ — check run-force responsibility!"
-    else
-      "Read hips, stay sticky, own your zone."
-    end
-  when "safety"
-    if read1.include?("Low Hat")
-      "RUN — fill the alley, come to balance, make the tackle!"
-    elsif read2.include?("Crossing")
-      "CROSSERS — communicate, pass off, or jump it!"
-    else
-      "PASS — get depth, read QB's eyes, make a play!"
-    end
+# Generic responsibility / action choices (player picks one)
+RESPONSIBILITIES = [
+  "Fill (gap)",
+  "Spill (kickout)",
+  "Box (force inside)",
+  "Scrape (over the top)",
+  "Drop (to zone)",
+  "Rush (pass)",
+  "Contain (edge)",
+  "Replace (puller)",
+  "Cover (man)",
+  "Carry (vertical)",
+  "Pass Off",
+  "Force / Alley",
+  "Trigger Downhill"
+]
+
+# Lookup key list for a position (falls back to room default if position unknown)
+def keys_for(position, room)
+  return POST_SNAP_KEYS[position] if position && POST_SNAP_KEYS[position]
+  # fallback by room
+  case room
+  when "lb"     then POST_SNAP_KEYS["Mike"]
+  when "dl"     then POST_SNAP_KEYS["Defensive Tackle (1/3-Tech)"]
+  when "cb"     then POST_SNAP_KEYS["Field CB"]
+  when "safety" then POST_SNAP_KEYS["Free Safety"]
+  else { label: "Post-Snap Key", options: [] }
   end
 end
 
@@ -168,21 +244,22 @@ db do |c|
       play_num TEXT NOT NULL,
       formation TEXT,
       alignment TEXT,
-      read1 TEXT,
-      read2 TEXT,
-      rule TEXT,
+      motion TEXT,
+      def_call TEXT,
+      post_key TEXT,
+      action TEXT,
       created_at TIMESTAMP DEFAULT NOW(),
-      updated_at TIMESTAMP DEFAULT NOW(),
-      UNIQUE (assignment_id, play_num)
+      updated_at TIMESTAMP DEFAULT NOW()
     );
   SQL
-  c.exec("ALTER TABLE reports ADD COLUMN IF NOT EXISTS alignment TEXT")
+  c.exec("ALTER TABLE reports ADD COLUMN IF NOT EXISTS motion TEXT")
+  c.exec("ALTER TABLE reports ADD COLUMN IF NOT EXISTS def_call TEXT")
+  c.exec("ALTER TABLE reports ADD COLUMN IF NOT EXISTS post_key TEXT")
+  c.exec("ALTER TABLE reports ADD COLUMN IF NOT EXISTS action TEXT")
   c.exec("ALTER TABLE reports ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()")
-  # Unique constraint: ensure only one report per (assignment, play) so resubmits overwrite
   begin
     c.exec("ALTER TABLE reports ADD CONSTRAINT reports_assignment_play_unique UNIQUE (assignment_id, play_num)")
   rescue PG::Error
-    # constraint already exists
   end
 end
 
@@ -223,7 +300,7 @@ get '/' do
   erb :home
 end
 
-# ----- PLAYER FLOW -----
+# ----- PLAYER -----
 get '/player' do
   @players = db { |c| c.exec("SELECT * FROM players ORDER BY name").to_a }
   erb :player_pick
@@ -239,9 +316,7 @@ get '/player/:id' do
       "SELECT * FROM assignments WHERE player_id=$1 ORDER BY id DESC", [pid]
     ).to_a
     @reports_by_aid = {}
-    c.exec_params(
-      "SELECT * FROM reports WHERE player_id=$1", [pid]
-    ).to_a.each do |r|
+    c.exec_params("SELECT * FROM reports WHERE player_id=$1", [pid]).to_a.each do |r|
       aid = r["assignment_id"].to_i
       @reports_by_aid[aid] ||= {}
       @reports_by_aid[aid][r["play_num"]] = r
@@ -250,7 +325,6 @@ get '/player/:id' do
   erb :player_home
 end
 
-# Player taps a play tile -> open the reads form (with prefill if resubmit)
 get '/play/:assignment_id/:play_num' do
   aid = params[:assignment_id].to_i
   @play_num = params[:play_num]
@@ -260,24 +334,20 @@ get '/play/:assignment_id/:play_num' do
     @assignment = a[0]
     @player_id  = @assignment["player_id"].to_i
     @room_key   = @assignment["room"]
+    @position   = @assignment["position"]
 
-    # Look up player position from player record if assignment didn't have it
-    if @assignment["position"].to_s == ""
+    if @room_key.to_s == "" || @position.to_s == ""
       pr = c.exec_params("SELECT room, position FROM players WHERE id=$1", [@player_id])
       if pr.ntuples > 0
-        @room_key ||= pr[0]["room"]
-        @assignment["position"] = pr[0]["position"] if @assignment["position"].to_s == ""
+        @room_key = pr[0]["room"] if @room_key.to_s == ""
+        @position = pr[0]["position"] if @position.to_s == ""
       end
     end
 
-    # Existing report? prefill it
-    prev = c.exec_params(
-      "SELECT * FROM reports WHERE assignment_id=$1 AND play_num=$2",
-      [aid, @play_num]
-    )
+    prev = c.exec_params("SELECT * FROM reports WHERE assignment_id=$1 AND play_num=$2", [aid, @play_num])
     @previous = prev.ntuples > 0 ? prev[0] : nil
   end
-  @reads = READS[@room_key] || []
+  @key_info = keys_for(@position, @room_key)
   erb :reads_form
 end
 
@@ -287,45 +357,30 @@ post '/play/submit' do
   play      = params[:play_num].to_s
   formation = params[:formation].to_s
   alignment = params[:alignment].to_s
-  read1     = params[:read1].to_s
-  read2     = params[:read2].to_s
+  motion    = params[:motion].to_s
+  def_call  = params[:def_call].to_s
+  post_key  = params[:post_key].to_s
+  action    = params[:action].to_s
 
   db do |c|
-    a = c.exec_params("SELECT * FROM assignments WHERE id=$1", [aid])
-    halt 400, "Bad assignment" if a.ntuples.zero?
-    asg = a[0]
-
-    # Determine room and position (prefer assignment, fall back to player)
-    room = asg["room"]
-    position = asg["position"]
-    if room.to_s == "" || position.to_s == ""
-      pr = c.exec_params("SELECT room, position FROM players WHERE id=$1", [pid])
-      if pr.ntuples > 0
-        room ||= pr[0]["room"]
-        position ||= pr[0]["position"]
-      end
-    end
-
-    rule = compute_rule(room, position, read1, read2)
-
-    # Upsert: overwrite existing report for this (assignment, play)
-    c.exec_params(<<~SQL, [aid, pid, play, formation, alignment, read1, read2, rule])
-      INSERT INTO reports (assignment_id, player_id, play_num, formation, alignment, read1, read2, rule, updated_at)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8, NOW())
+    c.exec_params(<<~SQL, [aid, pid, play, formation, alignment, motion, def_call, post_key, action])
+      INSERT INTO reports (assignment_id, player_id, play_num, formation, alignment, motion, def_call, post_key, action, updated_at)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9, NOW())
       ON CONFLICT (assignment_id, play_num) DO UPDATE SET
         player_id = EXCLUDED.player_id,
         formation = EXCLUDED.formation,
         alignment = EXCLUDED.alignment,
-        read1     = EXCLUDED.read1,
-        read2     = EXCLUDED.read2,
-        rule      = EXCLUDED.rule,
+        motion    = EXCLUDED.motion,
+        def_call  = EXCLUDED.def_call,
+        post_key  = EXCLUDED.post_key,
+        action    = EXCLUDED.action,
         updated_at = NOW()
     SQL
   end
   redirect "/player/#{pid}"
 end
 
-# Scorecard for a finished assignment
+# Scorecard
 get '/report/:assignment_id' do
   aid = params[:assignment_id].to_i
   db do |c|
@@ -339,26 +394,30 @@ get '/report/:assignment_id' do
     @answer_key = parse_answer_key(@assignment["answer_key"])
     @plays = parse_plays(@assignment["play_numbers"])
     @reports = {}
-    c.exec_params(
-      "SELECT * FROM reports WHERE assignment_id=$1 ORDER BY play_num",
-      [aid]
-    ).to_a.each { |r| @reports[r["play_num"]] = r }
+    c.exec_params("SELECT * FROM reports WHERE assignment_id=$1 ORDER BY play_num", [aid]).to_a.each do |r|
+      @reports[r["play_num"]] = r
+    end
   end
   @room = ROOMS[@assignment["room"]] || {}
-  # tally
-  @score = { formation: { correct: 0, graded: 0 },
-             alignment: { correct: 0, graded: 0 } }
+  @score = {
+    formation: { correct: 0, graded: 0 },
+    alignment: { correct: 0, graded: 0 },
+    post_key:  { correct: 0, graded: 0 },
+    action:    { correct: 0, graded: 0 }
+  }
   @plays.each do |pn|
     key = @answer_key[pn] || {}
     r = @reports[pn]
     next unless r
-    if key["formation"].to_s != ""
-      @score[:formation][:graded] += 1
-      @score[:formation][:correct] += 1 if r["formation"].to_s == key["formation"].to_s
+    %w[formation alignment post_key].each do |field|
+      next if key[field].to_s == ""
+      @score[field.to_sym][:graded] += 1
+      @score[field.to_sym][:correct] += 1 if r[field].to_s == key[field].to_s
     end
-    if key["alignment"].to_s != ""
-      @score[:alignment][:graded] += 1
-      @score[:alignment][:correct] += 1 if r["alignment"].to_s == key["alignment"].to_s
+    if key["action"].to_s != ""
+      @score[:action][:graded] += 1
+      # Action grading: case-insensitive string equality (the coach picked from same dropdown)
+      @score[:action][:correct] += 1 if r["action"].to_s.downcase == key["action"].to_s.downcase
     end
   end
   erb :report
@@ -417,16 +476,18 @@ post '/assign/add' do
   hudl_link    = params[:hudl_link].to_s.strip
   notes        = params[:notes].to_s.strip
 
-  # Build answer key from per-play form fields
   answer_key = {}
   parse_plays(play_numbers).each do |pn|
-    f = params["formation_#{pn}"].to_s
-    a = params["alignment_#{pn}"].to_s
-    answer_key[pn] = { "formation" => f, "alignment" => a } if f != "" || a != ""
+    entry = {
+      "formation" => params["formation_#{pn}"].to_s,
+      "alignment" => params["alignment_#{pn}"].to_s,
+      "post_key"  => params["post_key_#{pn}"].to_s,
+      "action"    => params["action_#{pn}"].to_s
+    }
+    answer_key[pn] = entry if entry.values.any? { |v| v != "" }
   end
 
   db do |c|
-    # Pull room/position from player
     pr = c.exec_params("SELECT room, position FROM players WHERE id=$1", [player_id])
     room = pr.ntuples > 0 ? pr[0]["room"] : nil
     position = pr.ntuples > 0 ? pr[0]["position"] : nil
@@ -444,30 +505,48 @@ post '/assign/delete' do
   redirect '/assign'
 end
 
-# Endpoint that the new-assignment form pings to render the per-play answer-key inputs after typing play numbers
+# Per-play answer key inputs (rendered by JS fetch)
 get '/assign/keys' do
   content_type :html
   plays = parse_plays(params[:plays])
-  room  = params[:room].to_s
-  gaps  = GAPS[room] || []
+  position = params[:position].to_s
+  room = params[:room].to_s
+  gaps = GAPS[room] || []
+  key_info = keys_for(position, room)
+
   html = ""
-  plays.each do |pn|
-    html << %Q{<div class="card" style="padding:12px; margin-bottom:10px;">
-      <strong>Play #{h pn}</strong>
-      <label style="margin-top:8px;">Correct Formation (optional)</label>
-      <select name="formation_#{h pn}">
-        <option value="">— no answer —</option>}
-    FORMATIONS.each do |group, opts|
-      html << %Q{<optgroup label="#{h group}">}
-      opts.each { |o| html << %Q{<option value="#{h o}">#{h o}</option>} }
-      html << "</optgroup>"
+  if plays.empty?
+    html << '<p class="muted" style="text-align:center;">Enter play numbers above to fill in answers.</p>'
+  else
+    html << '<table class="key-table"><thead><tr><th>Play</th><th>Formation</th><th>Alignment</th><th>Post-Snap Key</th><th>Action</th></tr></thead><tbody>'
+    plays.each do |pn|
+      html << %Q{<tr><td><strong>#{h pn}</strong></td>}
+
+      # Formation
+      html << %Q{<td><select name="formation_#{h pn}"><option value="">—</option>}
+      FORMATIONS.each do |group, opts|
+        html << %Q{<optgroup label="#{h group}">}
+        opts.each { |o| html << %Q{<option value="#{h o}">#{h o}</option>} }
+        html << "</optgroup>"
+      end
+      html << "</select></td>"
+
+      # Alignment
+      html << %Q{<td><select name="alignment_#{h pn}"><option value="">—</option>}
+      gaps.each { |g| html << %Q{<option value="#{h g}">#{h g}</option>} }
+      html << "</select></td>"
+
+      # Post-snap key
+      html << %Q{<td><select name="post_key_#{h pn}"><option value="">—</option>}
+      key_info[:options].each { |o| html << %Q{<option value="#{h o}">#{h o}</option>} }
+      html << "</select></td>"
+
+      # Action
+      html << %Q{<td><select name="action_#{h pn}"><option value="">—</option>}
+      RESPONSIBILITIES.each { |r| html << %Q{<option value="#{h r}">#{h r}</option>} }
+      html << "</select></td></tr>"
     end
-    html << %Q{</select>
-      <label>Correct Alignment (optional)</label>
-      <select name="alignment_#{h pn}">
-        <option value="">— no answer —</option>}
-    gaps.each { |g| html << %Q{<option value="#{h g}">#{h g}</option>} }
-    html << "</select></div>"
+    html << "</tbody></table>"
   end
   html
 end
@@ -515,8 +594,10 @@ __END__
       font-size:17px; line-height:1.4;
       padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom); }
     .wrap { max-width:640px; margin:0 auto; padding:16px 16px 120px; }
+    .wrap-wide { max-width:1200px; }
     h1 { font-size:24px; margin:8px 0 16px; }
     h2 { font-size:19px; }
+    h3 { font-size:15px; margin:18px 0 6px; color:#94a3b8; text-transform:uppercase; letter-spacing:.5px; }
     a { color:#60a5fa; }
     label { display:block; font-weight:600; margin:14px 0 6px; font-size:14px; color:#cbd5e1; text-transform:uppercase; letter-spacing:.5px; }
     input[type=text], input[type=number], input[type=url], select, textarea {
@@ -526,7 +607,7 @@ __END__
     }
     textarea { min-height:80px; resize:vertical; }
     select { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' stroke='%23cbd5e1' stroke-width='2' fill='none'/></svg>");
-      background-repeat:no-repeat; background-position:right 16px center; padding-right:40px; }
+      background-repeat:no-repeat; background-position:right 12px center; padding-right:36px; }
     .row { display:flex; gap:10px; }
     .row > * { flex:1; }
     .card { background:#1e293b; padding:16px; border-radius:12px; margin-bottom:16px; }
@@ -545,13 +626,13 @@ __END__
     .sticky { position:fixed; left:0; right:0; bottom:0;
       padding:12px 16px calc(12px + env(safe-area-inset-bottom));
       background:linear-gradient(to top,#0f172a 70%,rgba(15,23,42,0));
-      display:flex; gap:10px; }
+      display:flex; gap:10px; max-width:640px; margin:0 auto; }
     .sticky > * { flex:1; }
     .muted { color:#94a3b8; font-size:14px; }
     .badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700; }
     .stat { background:#1e293b; padding:14px; border-radius:10px; text-align:center; flex:1; min-width:90px; }
-    .stat h3 { margin:0; color:#94a3b8; font-size:12px; font-weight:700; text-transform:uppercase; }
-    .stat p { margin:6px 0 0; font-size:24px; font-weight:700; }
+    .stat h3 { margin:0; color:#94a3b8; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
+    .stat p { margin:6px 0 0; font-size:24px; font-weight:700; color:#f8fafc; }
     .stats { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
     .room-link { display:flex; align-items:center; padding:18px; margin:10px 0;
       background:#1e293b; color:#fff; text-decoration:none; border-radius:12px;
@@ -570,12 +651,26 @@ __END__
     th, td { padding:10px 8px; border-bottom:1px solid #334155; text-align:left; vertical-align:top; }
     thead { background:#334155; }
     hr { border:none; border-top:1px solid #334155; margin:20px 0; }
-    .correct { color:#86efac; }
-    .wrong   { color:#fca5a5; }
+    .correct { color:#86efac; font-weight:700; }
+    .wrong   { color:#fca5a5; font-weight:700; }
     .neutral { color:#cbd5e1; }
+    .section-tag { display:inline-block; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
+    .pre-snap-tag  { background:rgba(59,130,246,.15); color:#93c5fd; }
+    .post-snap-tag { background:rgba(239,68,68,.15); color:#fca5a5; }
+    /* Answer-key compact table */
+    .key-table { width:100%; font-size:13px; }
+    .key-table th, .key-table td { padding:6px 4px; border-bottom:1px solid #334155; vertical-align:top; }
+    .key-table select { padding:8px; font-size:14px; min-height:38px; }
+    /* Desktop layout for coach pages */
+    @media (min-width: 900px) {
+      .wrap-wide { padding: 24px; }
+      .wrap-wide .sticky { max-width:1200px; }
+      .two-col { display:grid; grid-template-columns: 1fr 1.2fr; gap:20px; align-items:start; }
+      .two-col > .card { margin-bottom:0; }
+    }
   </style>
 </head>
-<body><div class="wrap"><%= yield %></div></body>
+<body><div class="wrap <%= @wide ? 'wrap-wide' : '' %>"><%= yield %></div></body>
 </html>
 
 @@home
@@ -673,51 +768,76 @@ __END__
 
 <div class="card">
   <p style="margin:0 0 8px;"><strong>You:</strong>
-    <span class="muted"><%= h(@assignment["position"].to_s != "" ? @assignment["position"] : room[:name]) %></span>
+    <span class="muted"><%= h(@position.to_s != "" ? @position : room[:name]) %></span>
   </p>
   <% if @assignment["hudl_link"].to_s != "" %>
     <a href="<%= h @assignment["hudl_link"] %>" target="_blank" rel="noopener" class="btn btn-ghost btn-sm" style="margin-top:6px; width:100%;">📹 Find play <%= h @play_num %> in Hudl</a>
   <% end %>
   <% if @previous %>
-    <p class="muted" style="margin-top:10px; font-size:13px;">You can change your previous answers below.</p>
+    <p class="muted" style="margin-top:10px; font-size:13px;">Editing your previous answers.</p>
   <% end %>
 </div>
 
-<form id="form" action="/play/submit" method="post" class="card">
+<form id="form" action="/play/submit" method="post">
   <input type="hidden" name="assignment_id" value="<%= @assignment["id"] %>">
   <input type="hidden" name="player_id" value="<%= @player_id %>">
   <input type="hidden" name="play_num" value="<%= h @play_num %>">
 
-  <label>1. Offensive Formation</label>
-  <select name="formation" required>
-    <option value="">— pick one —</option>
-    <% FORMATIONS.each do |group, opts| %>
-      <optgroup label="<%= group %>">
-        <% opts.each do |o| %>
-          <option value="<%= h o %>"<%= " selected" if @previous && @previous["formation"].to_s == o %>><%= h o %></option>
-        <% end %>
-      </optgroup>
-    <% end %>
-  </select>
+  <div class="card">
+    <span class="section-tag pre-snap-tag">Pre-Snap</span>
 
-  <label>2. Pre-Snap Alignment / Gap</label>
-  <select name="alignment" required>
-    <option value="">— pick one —</option>
-    <% gaps.each do |g| %>
-      <option value="<%= h g %>"<%= " selected" if @previous && @previous["alignment"].to_s == g %>><%= h g %></option>
-    <% end %>
-  </select>
-
-  <% @reads.each_with_index do |r, i| %>
-    <% prev_val = @previous ? @previous["read#{i+1}"].to_s : "" %>
-    <label><%= i+3 %>. <%= r[:label] %> <span class="muted">(post-snap)</span></label>
-    <select name="read<%= i+1 %>" required>
+    <label>1. Offensive Formation</label>
+    <select name="formation" required>
       <option value="">— pick one —</option>
-      <% r[:options].each do |o| %>
-        <option value="<%= h o %>"<%= " selected" if prev_val == o %>><%= h o %></option>
+      <% FORMATIONS.each do |group, opts| %>
+        <optgroup label="<%= group %>">
+          <% opts.each do |o| %>
+            <option value="<%= h o %>"<%= " selected" if @previous && @previous["formation"].to_s == o %>><%= h o %></option>
+          <% end %>
+        </optgroup>
       <% end %>
     </select>
-  <% end %>
+
+    <label>2. Motion / Shift</label>
+    <select name="motion">
+      <option value="">— optional —</option>
+      <% MOTIONS.each do |m| %>
+        <option value="<%= h m %>"<%= " selected" if @previous && @previous["motion"].to_s == m %>><%= h m %></option>
+      <% end %>
+    </select>
+
+    <label>3. My Alignment / Gap</label>
+    <select name="alignment" required>
+      <option value="">— pick one —</option>
+      <% gaps.each do |g| %>
+        <option value="<%= h g %>"<%= " selected" if @previous && @previous["alignment"].to_s == g %>><%= h g %></option>
+      <% end %>
+    </select>
+
+    <label>4. Defensive Call <span class="muted">(what was called?)</span></label>
+    <input type="text" name="def_call" placeholder="e.g. Cover 3, Tite, A-gap blitz"
+      value="<%= h(@previous && @previous["def_call"]) %>">
+  </div>
+
+  <div class="card">
+    <span class="section-tag post-snap-tag">Post-Snap</span>
+
+    <label>5. <%= h @key_info[:label] %></label>
+    <select name="post_key" required>
+      <option value="">— pick one —</option>
+      <% @key_info[:options].each do |o| %>
+        <option value="<%= h o %>"<%= " selected" if @previous && @previous["post_key"].to_s == o %>><%= h o %></option>
+      <% end %>
+    </select>
+
+    <label>6. My Responsibility / Action</label>
+    <select name="action" required>
+      <option value="">— pick one —</option>
+      <% RESPONSIBILITIES.each do |r| %>
+        <option value="<%= h r %>"<%= " selected" if @previous && @previous["action"].to_s == r %>><%= h r %></option>
+      <% end %>
+    </select>
+  </div>
 </form>
 
 <div class="sticky">
@@ -725,6 +845,7 @@ __END__
 </div>
 
 @@report
+<% @wide = true %>
 <div class="top">
   <a href="/player/<%= @player_id %>" class="btn btn-ghost btn-sm">&larr;</a>
   <h1>📊 Report</h1>
@@ -733,26 +854,24 @@ __END__
 <div class="card">
   <p style="margin:0;"><strong><%= h @assignment["player_name"] %></strong></p>
   <% if @room[:name] %>
-    <p class="muted" style="margin:4px 0 0;"><%= @room[:emoji] %> <%= @room[:name] %></p>
+    <p class="muted" style="margin:4px 0 0;"><%= @room[:emoji] %> <%= @room[:name] %> — <%= h @assignment["position"] %></p>
   <% end %>
 </div>
 
-<% if @score[:formation][:graded] + @score[:alignment][:graded] == 0 %>
+<% graded_total = @score.values.sum { |s| s[:graded] } %>
+<% if graded_total == 0 %>
   <div class="card">
-    <p class="muted">No answer key was set for this assignment — there's nothing to grade. You can still review what you wrote below.</p>
+    <p class="muted">No answer key was set for this assignment — there's nothing to grade. Review your answers below.</p>
   </div>
 <% else %>
   <div class="stats">
-    <% if @score[:formation][:graded] > 0 %>
-      <div class="stat" style="border-top:3px solid #facc15;">
-        <h3>Formation</h3>
-        <p><%= @score[:formation][:correct] %>/<%= @score[:formation][:graded] %></p>
-      </div>
-    <% end %>
-    <% if @score[:alignment][:graded] > 0 %>
-      <div class="stat" style="border-top:3px solid #60a5fa;">
-        <h3>Alignment</h3>
-        <p><%= @score[:alignment][:correct] %>/<%= @score[:alignment][:graded] %></p>
+    <% @score.each do |field, s| %>
+      <% next if s[:graded] == 0 %>
+      <% pct = s[:graded] > 0 ? (s[:correct] * 100.0 / s[:graded]).round : 0 %>
+      <% color = pct >= 80 ? "#22c55e" : (pct >= 60 ? "#facc15" : "#ef4444") %>
+      <div class="stat" style="border-top:3px solid <%= color %>;">
+        <h3><%= field.to_s.gsub("_", " ") %></h3>
+        <p><%= s[:correct] %>/<%= s[:graded] %></p>
       </div>
     <% end %>
   </div>
@@ -762,52 +881,34 @@ __END__
   <h2 style="margin-top:0;">Play-by-Play</h2>
   <div style="overflow-x:auto;">
     <table>
-      <thead><tr><th>Play</th><th>Formation</th><th>Alignment</th><th>Reads → Call</th></tr></thead>
+      <thead><tr><th>Play</th><th>Formation</th><th>Alignment</th><th>Post-Snap Key</th><th>Action</th><th>Notes</th></tr></thead>
       <tbody>
         <% @plays.each do |pn| %>
           <% r = @reports[pn] %>
           <% key = @answer_key[pn] || {} %>
           <tr>
             <td><strong><%= h pn %></strong></td>
-            <td>
-              <% if r.nil? %>
-                <span class="muted">—</span>
-              <% else %>
-                <% if key["formation"].to_s != "" %>
-                  <% if r["formation"].to_s == key["formation"].to_s %>
-                    <span class="correct">✓ <%= h r["formation"] %></span>
-                  <% else %>
-                    <span class="wrong">✗ <%= h r["formation"] %></span><br>
-                    <span class="muted" style="font-size:12px;">was: <%= h key["formation"] %></span>
-                  <% end %>
+            <% %w[formation alignment post_key action].each do |field| %>
+              <td>
+                <% if r.nil? %>
+                  <span class="muted">—</span>
                 <% else %>
-                  <span class="neutral"><%= h r["formation"] %></span>
-                <% end %>
-              <% end %>
-            </td>
-            <td>
-              <% if r.nil? %>
-                <span class="muted">—</span>
-              <% else %>
-                <% if key["alignment"].to_s != "" %>
-                  <% if r["alignment"].to_s == key["alignment"].to_s %>
-                    <span class="correct">✓ <%= h r["alignment"] %></span>
+                  <% if key[field].to_s != "" %>
+                    <% if r[field].to_s == key[field].to_s %>
+                      <span class="correct">✓</span> <%= h r[field] %>
+                    <% else %>
+                      <span class="wrong">✗</span> <%= h r[field] %>
+                      <br><span class="muted" style="font-size:11px;">was: <%= h key[field] %></span>
+                    <% end %>
                   <% else %>
-                    <span class="wrong">✗ <%= h r["alignment"] %></span><br>
-                    <span class="muted" style="font-size:12px;">was: <%= h key["alignment"] %></span>
+                    <span class="neutral"><%= h r[field] %></span>
                   <% end %>
-                <% else %>
-                  <span class="neutral"><%= h r["alignment"] %></span>
                 <% end %>
-              <% end %>
-            </td>
-            <td>
-              <% if r.nil? %>
-                <span class="muted">not done</span>
-              <% else %>
-                <span class="muted"><%= h r["read1"] %> / <%= h r["read2"] %></span><br>
-                <span style="color:#fca5a5;"><%= h r["rule"] %></span>
-              <% end %>
+              </td>
+            <% end %>
+            <td class="muted" style="font-size:12px;">
+              <% if r && r["motion"].to_s != "" %>Motion: <%= h r["motion"] %><br><% end %>
+              <% if r && r["def_call"].to_s != "" %>Call: <%= h r["def_call"] %><% end %>
             </td>
           </tr>
         <% end %>
@@ -816,20 +917,20 @@ __END__
   </div>
 </div>
 
-<div class="sticky">
-  <a href="/player/<%= @player_id %>" class="btn btn-ghost">&larr; Back to Plays</a>
-</div>
-
 @@coach_home
+<% @wide = true %>
 <div class="top">
   <a href="/" class="btn btn-ghost btn-sm">&larr;</a>
   <h1 style="color:#3b82f6;">🎯 Coach</h1>
 </div>
-<a href="/roster" class="btn btn-ghost"     style="margin-bottom:12px;">👥 Roster</a>
-<a href="/assign" class="btn btn-blue"      style="margin-bottom:12px;">📝 Assign Plays</a>
-<a href="/office" class="btn btn-ghost"     style="margin-bottom:12px;">📋 Reports</a>
+<div style="display:grid; grid-template-columns:1fr; gap:12px;">
+  <a href="/roster" class="btn btn-ghost">👥 Roster</a>
+  <a href="/assign" class="btn btn-blue">📝 Assign Plays</a>
+  <a href="/office" class="btn btn-ghost">📋 Reports</a>
+</div>
 
 @@roster
+<% @wide = true %>
 <div class="top">
   <a href="/coach" class="btn btn-ghost btn-sm">&larr;</a>
   <h1>👥 Roster</h1>
@@ -837,15 +938,23 @@ __END__
 
 <form action="/roster/add" method="post" class="card">
   <h2 style="margin-top:0;">Add Player</h2>
-  <label>Name</label>
-  <input type="text" name="name" placeholder="Player name" required>
-  <label>Room</label>
-  <select name="room" id="add-room" required onchange="updateAddPositions()">
-    <option value="">— pick a room —</option>
-    <% ROOMS.each do |k,v| %><option value="<%= k %>"><%= v[:emoji] %> <%= v[:name] %></option><% end %>
-  </select>
-  <label>Position</label>
-  <select name="position" id="add-position" required></select>
+  <div class="row">
+    <div>
+      <label>Name</label>
+      <input type="text" name="name" placeholder="Player name" required>
+    </div>
+    <div>
+      <label>Room</label>
+      <select name="room" id="add-room" required onchange="updateAddPositions()">
+        <option value="">— pick —</option>
+        <% ROOMS.each do |k,v| %><option value="<%= k %>"><%= v[:emoji] %> <%= v[:name] %></option><% end %>
+      </select>
+    </div>
+    <div>
+      <label>Position</label>
+      <select name="position" id="add-position" required></select>
+    </div>
+  </div>
   <button type="submit" class="btn btn-green" style="margin-top:14px;">Add Player</button>
 </form>
 
@@ -871,7 +980,7 @@ __END__
         <input type="hidden" name="id" value="<%= p["id"] %>">
         <div style="flex:1;">
           <label style="font-size:11px;">Room</label>
-          <select name="room" class="row-room" data-player-id="<%= p["id"] %>" data-current-position="<%= h p["position"] %>" onchange="updateRowPositions(this)">
+          <select name="room" class="row-room" data-current-position="<%= h p["position"] %>" onchange="updateRowPositions(this)">
             <% ROOMS.each do |k,v| %>
               <option value="<%= k %>"<%= " selected" if p["room"] == k %>><%= v[:emoji] %> <%= v[:name] %></option>
             <% end %>
@@ -879,7 +988,7 @@ __END__
         </div>
         <div style="flex:1;">
           <label style="font-size:11px;">Position</label>
-          <select name="position" class="row-position" data-player-id="<%= p["id"] %>"></select>
+          <select name="position" class="row-position"></select>
         </div>
         <button type="submit" class="btn btn-blue btn-sm">Save</button>
       </form>
@@ -907,11 +1016,11 @@ __END__
     var current = roomSelect.getAttribute('data-current-position');
     fillOptions(posSelect, POSITIONS[roomSelect.value] || [], current);
   }
-  // initialize each row
   document.querySelectorAll('.row-room').forEach(function(r){ updateRowPositions(r); });
 </script>
 
 @@assign
+<% @wide = true %>
 <div class="top">
   <a href="/coach" class="btn btn-ghost btn-sm">&larr;</a>
   <h1>📝 Assignments</h1>
@@ -923,52 +1032,60 @@ __END__
     <a href="/roster" class="btn btn-blue" style="margin-top:10px;">Go to Roster →</a>
   </div>
 <% else %>
-<form action="/assign/add" method="post" class="card">
-  <h2 style="margin-top:0;">New Assignment</h2>
+<form action="/assign/add" method="post">
+  <div class="two-col">
+    <div class="card">
+      <h2 style="margin-top:0;">New Assignment</h2>
 
-  <label>Player</label>
-  <select name="player_id" id="player-select" required>
-    <option value="">— pick a player —</option>
-    <% @players.each do |p| %>
-      <% room = room_meta(p["room"]) %>
-      <option value="<%= p["id"] %>" data-room="<%= h p["room"] %>"><%= h p["name"] %><%= room ? " — #{room[:name]}" : "" %></option>
-    <% end %>
-  </select>
+      <label>Player</label>
+      <select name="player_id" id="player-select" required onchange="refreshKeys()">
+        <option value="">— pick a player —</option>
+        <% @players.each do |p| %>
+          <% room = room_meta(p["room"]) %>
+          <option value="<%= p["id"] %>" data-room="<%= h p["room"] %>" data-position="<%= h p["position"] %>"><%= h p["name"] %><%= room ? " — #{p["position"]}" : "" %></option>
+        <% end %>
+      </select>
 
-  <label>Play numbers <span class="muted">(comma or space separated)</span></label>
-  <input type="text" name="play_numbers" id="play-numbers" placeholder="e.g. 12, 15, 23, 41" required>
+      <label>Play numbers <span class="muted">(comma or space separated)</span></label>
+      <input type="text" name="play_numbers" id="play-numbers" placeholder="e.g. 12, 15, 23, 41" required>
 
-  <label>Hudl library link <span class="muted">(optional)</span></label>
-  <input type="url" name="hudl_link" placeholder="https://www.hudl.com/library/...">
+      <label>Hudl library link <span class="muted">(optional)</span></label>
+      <input type="url" name="hudl_link" placeholder="https://www.hudl.com/library/...">
 
-  <label>Notes for the player <span class="muted">(optional)</span></label>
-  <textarea name="notes" placeholder="e.g. Find each play in the library and study it"></textarea>
+      <label>Notes for the player <span class="muted">(optional)</span></label>
+      <textarea name="notes" placeholder="e.g. Find each play in the library and study it"></textarea>
 
-  <hr>
+      <button type="submit" class="btn btn-blue" style="margin-top:16px;">Create Assignment</button>
+    </div>
 
-  <h2 style="margin-bottom:4px;">Answer Key <span class="muted" style="font-size:14px;">(optional, per play)</span></h2>
-  <p class="muted" style="margin-top:0;">Fill in what the player <em>should</em> identify. Skip a play to leave it ungraded.</p>
-  <div id="keys-container">
-    <p class="muted" style="text-align:center;">Pick a player and enter play numbers above to fill in answers.</p>
+    <div class="card">
+      <h2 style="margin-top:0;">Answer Key <span class="muted" style="font-size:14px;">(optional, per play)</span></h2>
+      <p class="muted" style="margin-top:0;">Fill in what the player <em>should</em> identify and do. Skip any field to leave it ungraded.</p>
+      <div id="keys-container">
+        <p class="muted" style="text-align:center;">Pick a player and enter play numbers to fill in answers.</p>
+      </div>
+    </div>
   </div>
-
-  <button type="submit" class="btn btn-blue" style="margin-top:16px;">Create Assignment</button>
 </form>
 
 <script>
   let keysDebounce = null;
   function refreshKeys() {
-    const room = document.querySelector('#player-select option:checked')?.dataset?.room || '';
+    const sel = document.querySelector('#player-select option:checked');
+    const room = sel?.dataset?.room || '';
+    const position = sel?.dataset?.position || '';
     const plays = document.getElementById('play-numbers').value;
     if (!plays.trim() || !room) {
-      document.getElementById('keys-container').innerHTML = '<p class="muted" style="text-align:center;">Pick a player and enter play numbers above to fill in answers.</p>';
+      document.getElementById('keys-container').innerHTML = '<p class="muted" style="text-align:center;">Pick a player and enter play numbers to fill in answers.</p>';
       return;
     }
-    fetch('/assign/keys?plays=' + encodeURIComponent(plays) + '&room=' + encodeURIComponent(room))
-      .then(r => r.text())
-      .then(html => { document.getElementById('keys-container').innerHTML = html; });
+    const url = '/assign/keys?plays=' + encodeURIComponent(plays)
+              + '&room=' + encodeURIComponent(room)
+              + '&position=' + encodeURIComponent(position);
+    fetch(url).then(r => r.text()).then(html => {
+      document.getElementById('keys-container').innerHTML = html;
+    });
   }
-  document.getElementById('player-select').addEventListener('change', refreshKeys);
   document.getElementById('play-numbers').addEventListener('input', function(){
     clearTimeout(keysDebounce);
     keysDebounce = setTimeout(refreshKeys, 400);
@@ -976,7 +1093,7 @@ __END__
 </script>
 <% end %>
 
-<h2>Active Assignments</h2>
+<h2 style="margin-top:30px;">Active Assignments</h2>
 <% if @assignments.empty? %>
   <p class="muted">None yet.</p>
 <% else %>
@@ -1009,6 +1126,7 @@ __END__
 <% end %>
 
 @@office
+<% @wide = true %>
 <div class="top">
   <a href="/coach" class="btn btn-ghost btn-sm">&larr;</a>
   <h1 style="color:#3b82f6;">📋 Reports</h1>
@@ -1034,42 +1152,31 @@ __END__
     <div style="overflow-x:auto;">
       <table>
         <thead>
-          <tr><th>Player</th><th>Play</th><th>Formation</th><th>Alignment</th><th>Reads → Call</th></tr>
+          <tr><th>Player</th><th>Play</th><th>Formation</th><th>Alignment</th><th>Key</th><th>Action</th><th>Call/Motion</th></tr>
         </thead>
         <tbody>
           <% @reports.each do |r| %>
-            <% room = room_meta(r["room"]) %>
             <% key = parse_answer_key(r["answer_key"])[r["play_num"]] || {} %>
             <tr>
               <td><%= h r["player_name"] %></td>
               <td><strong><%= h r["play_num"] %></strong></td>
-              <td>
-                <% if key["formation"].to_s != "" %>
-                  <% if r["formation"].to_s == key["formation"].to_s %>
-                    <span class="correct">✓</span> <%= h r["formation"] %>
+              <% %w[formation alignment post_key action].each do |field| %>
+                <td>
+                  <% if key[field].to_s != "" %>
+                    <% if r[field].to_s == key[field].to_s %>
+                      <span class="correct">✓</span> <%= h r[field] %>
+                    <% else %>
+                      <span class="wrong">✗</span> <%= h r[field] %>
+                      <br><span class="muted" style="font-size:11px;">was: <%= h key[field] %></span>
+                    <% end %>
                   <% else %>
-                    <span class="wrong">✗</span> <%= h r["formation"] %>
-                    <br><span class="muted" style="font-size:11px;">was: <%= h key["formation"] %></span>
+                    <%= h r[field] %>
                   <% end %>
-                <% else %>
-                  <%= h r["formation"] %>
-                <% end %>
-              </td>
-              <td>
-                <% if key["alignment"].to_s != "" %>
-                  <% if r["alignment"].to_s == key["alignment"].to_s %>
-                    <span class="correct">✓</span> <%= h r["alignment"] %>
-                  <% else %>
-                    <span class="wrong">✗</span> <%= h r["alignment"] %>
-                    <br><span class="muted" style="font-size:11px;">was: <%= h key["alignment"] %></span>
-                  <% end %>
-                <% else %>
-                  <%= h r["alignment"] %>
-                <% end %>
-              </td>
-              <td>
-                <span class="muted"><%= h r["read1"] %> / <%= h r["read2"] %></span><br>
-                <span style="color:#fca5a5;"><%= h r["rule"] %></span>
+                </td>
+              <% end %>
+              <td class="muted" style="font-size:12px;">
+                <% if r["def_call"].to_s != "" %><%= h r["def_call"] %><br><% end %>
+                <% if r["motion"].to_s != "" %><%= h r["motion"] %><% end %>
               </td>
             </tr>
           <% end %>
